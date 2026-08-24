@@ -8,6 +8,7 @@ vm/
 *.exe
 *.o
 hosted/quantisd
+hosted/bin/
 
 # OS cruft
 Thumbs.db

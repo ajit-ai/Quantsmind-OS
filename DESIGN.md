@@ -137,6 +137,24 @@ Biscuit OS showed viability only with heavy caveats); Rust rewrite
 timelines). C++ rejected outright: no frontend in the 9front toolchain,
 kernel-hostile runtime.
 
+## Platform Support
+
+Tier 1 — **Hosted Quantis services** (`quantisd` & friends): run on the
+existing world. Pure Go stdlib, zero dependencies, cross-compiled:
+Windows · Linux (amd64/arm64) · macOS (Intel/Apple Silicon) · FreeBSD ·
+OpenBSD · NetBSD. `tools/build-hosted.ps1` emits all binaries to
+`hosted/bin/<os>-<arch>/`.
+
+Tier 2 — **Native kernel** (the fork itself): 9front x86-64 in VMs and
+future appliances.
+
+Tier 3 — **Clients**: anything speaking HTTP today; native 9P++ mounters
+(`qmount`, FUSE) arrive with Phase 4.
+
+Roles vs incumbents: Linux = peer server + talent pool; Windows/macOS =
+managed clients and dev cockpits; BSD family = friendly cousins sharing
+Unix DNA; all of them = workload feeders into the Quantis serving tier.
+
 ## Non-Goals
 - POSIX compliance as a goal (APE bridge exists, not a target)
 - Competing as a general-purpose desktop

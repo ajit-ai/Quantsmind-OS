@@ -26,6 +26,18 @@ wsl --install -d Ubuntu        # optional, for Linux-side tooling
 After install, inside 9front you build from source with `git/pull` + `mk`
 (self-hosting workflow — see ROADMAP Phase 1).
 
+## Runs on Windows, Linux, macOS, BSD
+
+`quantisd` (the hosted Quantis resource server) is pure Go stdlib —
+no cgo, no syscalls. Build official binaries for every platform:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-hosted.ps1
+# -> hosted/bin/{windows,linux,darwin,freebsd,openbsd,netbsd}-<arch>/quantisd
+```
+
+Run anywhere: `quantisd`, then browse `http://localhost:9090/ns`.
+
 ## Status
 
-Phase 0 — environment setup.
+Phase 0 — environment ready; hosted prototype running on 8 platforms.
