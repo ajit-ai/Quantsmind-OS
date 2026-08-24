@@ -1,0 +1,14 @@
+# Virtual machines & large artifacts
+vm/
+*.iso
+*.iso.gz
+*.qcow2
+
+# Build outputs
+*.exe
+*.o
+hosted/quantisd
+
+# OS cruft
+Thumbs.db
+.DS_Store
