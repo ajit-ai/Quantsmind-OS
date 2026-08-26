@@ -157,5 +157,9 @@ Unix DNA; all of them = workload feeders into the Quantis serving tier.
 
 ## Non-Goals
 - POSIX compliance as a goal (APE bridge exists, not a target)
-- Competing as a general-purpose desktop
+- Competing as a general-purpose desktop or mobile OS
 - Backwards compatibility above correctness
+- General cloud compute (AWS/Azure/GCP infrastructure moat)
+
+See [MARKET.md](MARKET.md) for full competitive landscape and
+go-to-market sequence.

@@ -7,6 +7,8 @@ and a stream of events.
 - **[DESIGN.md](DESIGN.md)** — pillars: resource protocol, namespaces as sandboxes,
   vertical+horizontal scheduling, memory reuse engine, event fabric, AI subsystem
 - **[ROADMAP.md](ROADMAP.md)** — phased plan from first boot to cluster inference
+- **[MARKET.md](MARKET.md)** — competitive landscape, target segments,
+  go-to-market sequence
 
 ## Quick Start (Windows host)
 
