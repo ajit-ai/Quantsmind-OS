@@ -9,6 +9,8 @@ vm/
 *.o
 hosted/quantisd
 hosted/bin/
+dist/
+*.tar.gz
 
 # OS cruft
 Thumbs.db
