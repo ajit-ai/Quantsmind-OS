@@ -15,10 +15,7 @@ func main() {
 	tree.nodes["/srv/status"].data = "quantis hosted proto up\n"
 
 	tree.Mount("/sys/mem", newNode("metrics"))
-	tree.nodes["/sys/mem"].data = "used=40%\n"
-
 	tree.Mount("/sys/cpu", newNode("metrics"))
-	tree.nodes["/sys/cpu"].data = "load=0.1\n"
 
 	tree.Mount("/dev/net0", newNode("net"))
 	tree.nodes["/dev/net0"].data = "link up\n"
@@ -33,10 +30,6 @@ func main() {
 		p := strings.TrimPrefix(r.URL.Path, "/r/")
 		if !strings.HasPrefix(p, "/") {
 			p = "/" + p
-		}
-		if strings.HasSuffix(p, "/watch") {
-			tree.HandleWatch(w, r, strings.TrimSuffix(p, "/watch"))
-			return
 		}
 		if strings.HasSuffix(p, "/watch") {
 			tree.HandleWatch(w, r, strings.TrimSuffix(p, "/watch"))
@@ -59,16 +52,31 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
 
-// tickers keeps metrics/net resources alive so watchers see a living system.
+// tickers feeds live system stats (real on Windows/Linux, simulated elsewhere)
+// plus synthetic network frames, so watchers see a living system.
 func tickers(t *Tree) {
 	mem := t.nodes["/sys/mem"]
 	cpu := t.nodes["/sys/cpu"]
 	net := t.nodes["/dev/net0"]
 	i := 0
+	simCPU, simMem := -1, -1
 	for range time.Tick(1 * time.Second) {
 		i++
-		mem.Write([]byte(fmt.Sprintf("used=%d%%\n", 40+i%30)))
-		cpu.Write([]byte(fmt.Sprintf("load=%.1f\n", float64(i%10)/10.0)))
+		c, m, src := sampleSystem()
+		if c < 0 {
+			simCPU = (simCPU + 3) % 71
+			if simCPU < 0 {
+				simCPU = 0
+			}
+			c = simCPU
+			src = "simulated"
+		}
+		if m < 0 {
+			simMem = (i * 7) % 60
+			m = simMem
+		}
+		mem.Write([]byte(fmt.Sprintf("used=%d%% (%s)\n", m, src)))
+		cpu.Write([]byte(fmt.Sprintf("load=%d%% (%s)\n", c, src)))
 		net.Write([]byte(fmt.Sprintf("frame seq=%d src=tcp!node%d!9pp\n", i, i%3)))
 	}
 }
