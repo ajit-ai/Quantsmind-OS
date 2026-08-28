@@ -12,22 +12,100 @@ import (
 type Node struct {
 	path string
 	kind string // "", "metrics", "net", "infer"
+
 	mu   sync.Mutex
 	data string
 	subs map[chan string]bool
+
+	// Event fabric: a bounded replay ring so late subscribers catch up,
+	// plus explicit backpressure accounting (slow subscribers are dropped,
+	// never allowed to block the writers).
+	history     []string // most recent first
+	historyCap  int
+	dropped     uint64
+	lastDropped string
 }
 
+// ReplayMax is how many past events a freshly subscribed watcher receives.
+const replayBuffer = 32
+
 func newNode(kind string) *Node {
-	return &Node{kind: kind, subs: map[chan string]bool{}}
+	return &Node{
+		kind:       kind,
+		subs:       map[chan string]bool{},
+		historyCap: replayBuffer,
+	}
 }
 
 func (n *Node) emit(ev string) {
-	for ch := range n.subs {
+	n.mu.Lock()
+	// append to the replay ring (drop the oldest once full)
+	n.history = append([]string{ev}, n.history...)
+	if len(n.history) > n.historyCap {
+		n.history = n.history[:n.historyCap]
+	}
+	subs := n.subs
+	// snapshot subscriber handles before releasing the lock; delivery
+	// happens outside it so a slow consumer never stalls the writer.
+	handles := make([]chan string, 0, len(subs))
+	for ch := range subs {
+		handles = append(handles, ch)
+	}
+	n.mu.Unlock()
+
+	for _, ch := range handles {
 		select {
 		case ch <- ev:
-		default: // slow subscriber: drop rather than block writers
+		default:
+			// Backpressure policy: drop for slow subscribers, but count it
+			// so operators can see the pressure (never block the writer).
+			n.countDrop(ev)
 		}
 	}
+}
+
+func (n *Node) countDrop(ev string) {
+	n.mu.Lock()
+	n.dropped++
+	n.lastDropped = ev
+	n.mu.Unlock()
+}
+
+// Subscribe registers a watcher. When replay=true the subscriber first
+// receives the recent event history so a late joiner doesn't miss state.
+func (n *Node) SubscribeReplay(replay bool) chan string {
+	ch := make(chan string, 16)
+	n.mu.Lock()
+	n.subs[ch] = true
+	hist := n.history
+	n.mu.Unlock()
+	if replay {
+		for _, ev := range hist {
+			select {
+			case ch <- ev:
+			default:
+			}
+		}
+	}
+	return ch
+}
+
+// Subscribe is the lightweight variant: no replay, just live events.
+func (n *Node) Subscribe() chan string {
+	return n.SubscribeReplay(false)
+}
+
+func (n *Node) Unsubscribe(ch chan string) {
+	n.mu.Lock()
+	delete(n.subs, ch)
+	n.mu.Unlock()
+}
+
+// Stats summarizes event-fabric pressure for introspection.
+func (n *Node) stats() (ring int, dropped uint64, subs int) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return len(n.history), n.dropped, len(n.subs)
 }
 
 func (n *Node) Read() ([]byte, error) {
@@ -68,20 +146,6 @@ func streamTokens(path, prompt string, n *Node) {
 		time.Sleep(60 * time.Millisecond)
 	}
 	n.emit(fmt.Sprintf("done %s", path))
-}
-
-func (n *Node) Subscribe() chan string {
-	ch := make(chan string, 16)
-	n.mu.Lock()
-	n.subs[ch] = true
-	n.mu.Unlock()
-	return ch
-}
-
-func (n *Node) Unsubscribe(ch chan string) {
-	n.mu.Lock()
-	delete(n.subs, ch)
-	n.mu.Unlock()
 }
 
 func trunc(s string) string {

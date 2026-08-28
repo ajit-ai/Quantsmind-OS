@@ -17,6 +17,9 @@ func main() {
 	tree.Mount("/srv/version", newNode(""))
 	tree.nodes["/srv/version"].data = Product + " " + Version + "\n"
 
+	tree.Mount("/srv/events", newNode(""))
+	tree.nodes["/srv/events"].data = "aggregate event-fabric stats\n"
+
 	tree.Mount("/sys/mem", newNode("metrics"))
 	tree.Mount("/sys/cpu", newNode("metrics"))
 
@@ -65,6 +68,7 @@ func tickers(t *Tree) {
 	mem := t.nodes["/sys/mem"]
 	cpu := t.nodes["/sys/cpu"]
 	net := t.nodes["/dev/net0"]
+	evf := t.nodes["/srv/events"]
 	i := 0
 	simCPU, simMem := -1, -1
 	for range time.Tick(1 * time.Second) {
@@ -85,5 +89,8 @@ func tickers(t *Tree) {
 		mem.Write([]byte(fmt.Sprintf("used=%d%% (%s)\n", m, src)))
 		cpu.Write([]byte(fmt.Sprintf("load=%d%% (%s)\n", c, src)))
 		net.Write([]byte(fmt.Sprintf("frame seq=%d src=tcp!node%d!9pp\n", i, i%3)))
+		fs := t.FabricStats()
+		evf.Write([]byte(fmt.Sprintf("ring=%d dropped=%d watchers=%d\n",
+			fs.ReplayRing, fs.Dropped, fs.Watchers)))
 	}
 }

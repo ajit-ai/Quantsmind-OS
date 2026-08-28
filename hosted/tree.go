@@ -43,6 +43,30 @@ func (t *Tree) HandleNamespace(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(paths)
 }
 
+// EventFabricStats is the aggregate event-fabric pressure across all nodes.
+type EventFabricStats struct {
+	ReplayRing int `json:"replay_ring"`
+	Dropped    int `json:"dropped"`
+	Watchers   int `json:"watchers"`
+}
+
+func (t *Tree) FabricStats() EventFabricStats {
+	var s EventFabricStats
+	t.mu.RLock()
+	nodes := make([]*Node, 0, len(t.nodes))
+	for _, n := range t.nodes {
+		nodes = append(nodes, n)
+	}
+	t.mu.RUnlock()
+	for _, n := range nodes {
+		r, d, w := n.stats()
+		s.ReplayRing += r
+		s.Dropped += int(d)
+		s.Watchers += w
+	}
+	return s
+}
+
 func (t *Tree) HandleRead(w http.ResponseWriter, path string) {
 	n, ok := t.get(path)
 	if !ok {
@@ -84,7 +108,8 @@ func (t *Tree) HandleWatch(w http.ResponseWriter, r *http.Request, path string) 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 
-	ch := n.Subscribe()
+	// replay recent history first so a late joiner catches up, then live
+	ch := n.SubscribeReplay(true)
 	defer n.Unsubscribe(ch)
 
 	fmt.Fprintf(w, "event hello\ndata watching %s\n\n", path)

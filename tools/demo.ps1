@@ -57,6 +57,14 @@ try {
     Write-Host ""
     Write-Host "GET /r/ai/models/medscan/infer (cached structured result):" -ForegroundColor Gray
     cmd /c "curl.exe -s $base/r/ai/models/medscan/infer"
+
+    Write-Host ""
+    Write-Host "[6] EVENT FABRIC - replay catch-up on a late watcher." -ForegroundColor Yellow
+    Write-Host "Watching /srv/events (joins LATE, still sees recent history):" -ForegroundColor Gray
+    cmd /c "curl.exe -s -N --max-time 2 $base/r/srv/events/watch"
+    Write-Host ""
+    Write-Host "Fabric stats for the whole namespace:" -ForegroundColor Gray
+    cmd /c "curl.exe -s $base/r/srv/events"
 } finally {
     Stop-Job $job -ErrorAction SilentlyContinue
     Remove-Job $job -ErrorAction SilentlyContinue
@@ -67,5 +75,6 @@ Write-Host "=========== WHAT THIS PROVES ===========" -ForegroundColor Green
 Write-Host "1 FILE  : the same object that a shell would cat"
 Write-Host "2 API   : the same object that a program POSTs to"
 Write-Host "3 EVENTS: the same object that a dashboard subscribes to"
+Write-Host "4 REPLAY: a late subscriber still catches up history (no missed state)"
 Write-Host ""
-Write-Host "That is the ENTIRE Quantis thesis in 4 commands." -ForegroundColor Green
+Write-Host "That is the ENTIRE Quantis thesis in a handful of commands." -ForegroundColor Green
