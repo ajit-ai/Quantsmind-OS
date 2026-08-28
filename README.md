@@ -7,8 +7,37 @@ and a stream of events.
 - **[DESIGN.md](DESIGN.md)** — pillars: resource protocol, namespaces as sandboxes,
   vertical+horizontal scheduling, memory reuse engine, event fabric, AI subsystem
 - **[ROADMAP.md](ROADMAP.md)** — phased plan from first boot to cluster inference
+- **[STRATEGY.md](STRATEGY.md)** — 7 exploitation vectors vs K8s/CUDA, lead
+  strategy (security + zero-copy), build sequence, MVP demo definition
 - **[MARKET.md](MARKET.md)** — competitive landscape, target segments,
   go-to-market sequence
+
+## Hosted Prototypes (run today on any OS — no VM needed)
+
+### `quantisd` — resource server (`hosted/`)
+One object = file read + API write + event stream. Real system metrics
+on Windows/Linux.
+
+```powershell
+cd hosted; go run .     # then:
+curl http://localhost:9090/r/sys/mem
+curl -N http://localhost:9090/r/sys/cpu/watch
+```
+
+### `reconciler` — declaration→self-heal loop (`hosted/reconciler`)
+The Kubernetes convergence core, standalone: declare desired state, it
+enforces and respawns dead instances.
+
+```powershell
+cd hosted\reconciler; go run .
+# declare 3 instances:
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"name":"svc","desired":3}' http://localhost:9091/decl
+# simulate a crash; reconciler respawns to maintain exactly 3:
+curl -X POST http://localhost:9091/decl/svc/kill
+```
+
+Run `tools\demo.ps1` for the scripted end-to-end usability demo.
 
 ## Quick Start (Windows host)
 
