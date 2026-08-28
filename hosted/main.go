@@ -14,6 +14,9 @@ func main() {
 	tree.Mount("/srv/status", newNode(""))
 	tree.nodes["/srv/status"].data = "quantis hosted proto up\n"
 
+	tree.Mount("/srv/version", newNode(""))
+	tree.nodes["/srv/version"].data = Product + " " + Version + "\n"
+
 	tree.Mount("/sys/mem", newNode("metrics"))
 	tree.Mount("/sys/cpu", newNode("metrics"))
 
