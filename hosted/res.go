@@ -44,6 +44,17 @@ func (n *Node) Write(b []byte) error {
 	n.mu.Unlock()
 
 	if kind == "infer" {
+		if strings.Contains(path, "medscan") {
+			go func() {
+				res := inferMedScan(path, string(b), n)
+				// last write wins: cache the structured result on the node
+				n.mu.Lock()
+				n.data = fmt.Sprintf("triage=%s risk=%d/100 findings=%v\n",
+					res.Triage, res.RiskScore, res.Findings)
+				n.mu.Unlock()
+			}()
+			return nil
+		}
 		go streamTokens(path, string(b), n)
 		return nil
 	}
