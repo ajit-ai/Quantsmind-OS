@@ -1,0 +1,53 @@
+name: release
+
+# On a version tag (vX.Y.Z), build all platforms and publish a GitHub Release
+# with the installable artifacts. Package/version stamping happens in
+# tools/package.ps1 via `git describe` (gitignore'd dist/ is rebuilt here).
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # need tags for version stamping
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Package all platforms
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File tools\package.ps1
+
+      - name: Run hosted tests
+        run: |
+          pushd hosted
+          go test ./...
+          popd
+          pushd hosted/reconciler
+          go test ./...
+          popd
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REF: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "$REF" dist/quantis-*.tar.gz \
+            --title "Quantis $REF" \
+            --notes "Automated build of the Quantis hosted prototype.
+
+Installers and per-OS docs: see docs/INSTALL.md (unsigned community builds)." \
+            || { echo 'release exists or failed; uploading as draft assets'; \
+                 gh release create "$REF" dist/quantis-*.tar.gz --draft \
+                 --title "Quantis $REF" || true; }
