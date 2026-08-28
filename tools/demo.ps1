@@ -43,6 +43,20 @@ try {
     cmd /c "curl.exe -s -N --max-time 3 $base/r/dev/net0/watch"
     Write-Host ""
     Write-Host "(end of stream capture)" -ForegroundColor DarkGray
+
+    Write-Host ""
+    Write-Host "[5] MODEL AS A FILE - MedScan triage via the resource." -ForegroundColor Yellow
+    Write-Host "POST /r/ai/models/medscan/infer (watch the triage stream live):" -ForegroundColor Gray
+    $report = "Chest CT: 9mm spiculated nodule in the right upper lobe with a small pleural effusion. No acute consolidation."
+    $w = Start-Job -ScriptBlock { param($u) cmd /c "curl.exe -s -N --max-time 4 $u" } -ArgumentList "$base/r/ai/models/medscan/infer/watch"
+    Start-Sleep 1
+    cmd /c "curl.exe -s -X POST -d ""$report"" $base/r/ai/models/medscan/infer"
+    Wait-Job $w | Out-Null
+    Receive-Job $w
+    Remove-Job $w -Force -ErrorAction SilentlyContinue
+    Write-Host ""
+    Write-Host "GET /r/ai/models/medscan/infer (cached structured result):" -ForegroundColor Gray
+    cmd /c "curl.exe -s $base/r/ai/models/medscan/infer"
 } finally {
     Stop-Job $job -ErrorAction SilentlyContinue
     Remove-Job $job -ErrorAction SilentlyContinue

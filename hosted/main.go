@@ -27,6 +27,10 @@ func main() {
 	tree.nodes["/ai/models/qm-demo/infer"].data =
 		"POST a prompt here; tokens stream on ./watch\n"
 
+	tree.Mount("/ai/models/medscan/infer", newNode("infer"))
+	tree.nodes["/ai/models/medscan/infer"].data =
+		"POST a radiology report here; triage streams on ./watch\n"
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ns", tree.HandleNamespace)
 	mux.HandleFunc("/r/", func(w http.ResponseWriter, r *http.Request) {
