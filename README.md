@@ -39,6 +39,24 @@ curl -X POST http://localhost:9091/decl/svc/kill
 
 Run `tools\demo.ps1` for the scripted end-to-end usability demo.
 
+## One-click Install (final product)
+
+Build release packages for all platforms, then install:
+
+```powershell
+powershell -File tools\package.ps1     # -> dist/ (per-OS folders + .tar.gz)
+```
+
+| OS | Installer |
+|---|---|
+| Windows | `tools\install\install-windows.ps1` |
+| Debian/Ubuntu | `tools/install/install-linux.sh` |
+| macOS | `tools/install/install-macos.sh` |
+| FreeBSD/OpenBSD/NetBSD | `tools/install/install-bsd.sh` |
+
+See **[docs/INSTALL.md](docs/INSTALL.md)** for full instructions incl.
+signing/production notes.
+
 ## Quick Start (Windows host)
 
 ```powershell
